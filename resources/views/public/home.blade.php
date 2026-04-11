@@ -5,8 +5,8 @@
 @section('content')
     <!-- Hero Section -->
     <section class="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white overflow-hidden">
-        <div class="absolute inset-0 bg-black/20"></div>
-        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.05\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('{{ asset('images/cover.png') }}');"></div>
+        <div class="absolute inset-0 bg-black/50"></div>
         
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
@@ -14,9 +14,8 @@
                     <span class="inline-block px-4 py-1.5 bg-blue-700/50 rounded-full text-blue-200 text-sm font-medium mb-6">
                         Since 1997 • Registered with CAC 2002
                     </span>
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6">
-                        Empowering Youth for a 
-                        <span class="text-blue-300">Healthier</span> Tomorrow
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-blue-900">
+                        Empowering Youth for a Healthier Tomorrow
                     </h1>
                     <p class="text-xl text-blue-100 mb-8 leading-relaxed">
                         Youth Society for the Prevention of Infectious Diseases and Social Vices (YOSPIS) is a youth-led NGO committed to promoting public health, social responsibility, and youth development in Nigeria.

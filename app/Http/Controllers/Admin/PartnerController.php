@@ -133,4 +133,47 @@ class PartnerController extends Controller
         $status = $partner->is_active ? 'activated' : 'deactivated';
         return redirect()->back()->with('success', "Partner {$status}.");
     }
+
+    /**
+     * Handle bulk actions on partners.
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:activate,deactivate,delete',
+            'partner_ids' => 'required|array',
+            'partner_ids.*' => 'exists:partners,id',
+        ]);
+
+        $partnerIds = $validated['partner_ids'];
+        $action = $validated['action'];
+
+        switch ($action) {
+            case 'activate':
+                Partner::whereIn('id', $partnerIds)->update(['is_active' => true]);
+                $message = count($partnerIds) . ' partner(s) activated.';
+                break;
+
+            case 'deactivate':
+                Partner::whereIn('id', $partnerIds)->update(['is_active' => false]);
+                $message = count($partnerIds) . ' partner(s) deactivated.';
+                break;
+
+            case 'delete':
+                $partners = Partner::whereIn('id', $partnerIds)->get();
+                foreach ($partners as $partner) {
+                    if ($partner->logo) {
+                        Storage::disk('public')->delete($partner->logo);
+                    }
+                    $partner->delete();
+                }
+                $message = count($partnerIds) . ' partner(s) deleted.';
+                break;
+
+            default:
+                return redirect()->back()->with('error', 'Invalid action.');
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
 }

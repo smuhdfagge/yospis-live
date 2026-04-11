@@ -109,8 +109,28 @@
                             </div>
                         @endif
 
+                        @if(session('error'))
+                            <div class="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <p class="text-red-700 font-medium">{{ session('error') }}</p>
+                                </div>
+                            </div>
+                        @endif
+
                         <form action="{{ route('contact.store') }}" method="POST" class="space-y-6">
                             @csrf
+
+                            <!-- Honeypot field - hidden from humans, bots will fill it -->
+                            <div class="hidden" aria-hidden="true" style="position: absolute; left: -9999px;">
+                                <label for="website_url">Website URL</label>
+                                <input type="text" name="website_url" id="website_url" tabindex="-1" autocomplete="off">
+                            </div>
+
+                            <!-- Time-based token -->
+                            <input type="hidden" name="_form_token" value="{{ base64_encode(time()) }}">
 
                             <div class="grid md:grid-cols-2 gap-6">
                                 <div>
@@ -180,6 +200,20 @@
                                     class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none @error('message') border-red-500 @enderror"
                                     placeholder="How can we help you?">{{ old('message') }}</textarea>
                                 @error('message')
+                                    <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Math CAPTCHA -->
+                            <div>
+                                <label for="captcha" class="block text-sm font-medium text-gray-700 mb-2">Spam Check *</label>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-lg font-semibold text-gray-800">What is {{ $a }} + {{ $b }}?</span>
+                                    <input type="number" name="captcha" id="captcha" required
+                                        class="w-24 px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition @error('captcha') border-red-500 @enderror"
+                                        placeholder="?">
+                                </div>
+                                @error('captcha')
                                     <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                                 @enderror
                             </div>

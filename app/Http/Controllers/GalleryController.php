@@ -12,9 +12,8 @@ class GalleryController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Gallery::published()->ordered();
+        $query = Gallery::published()->with('images')->ordered();
 
-        // Filter by category
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }

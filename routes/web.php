@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ContactController as AdminContactController;
 use App\Http\Controllers\Admin\GalleryController as AdminGalleryController;
 use App\Http\Controllers\Admin\ProjectController as AdminProjectController;
 use App\Http\Controllers\Admin\PartnerController as AdminPartnerController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -72,6 +73,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::resource('articles', AdminArticleController::class)->except(['show']);
     Route::patch('articles/{article}/toggle-publish', [AdminArticleController::class, 'togglePublish'])
         ->name('articles.togglePublish');
+    Route::post('articles/bulk-action', [AdminArticleController::class, 'bulkAction'])
+        ->name('articles.bulkAction');
 
     // Contacts Management
     Route::get('contacts', [AdminContactController::class, 'index'])->name('contacts.index');
@@ -82,19 +85,30 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         ->name('contacts.markAsRead');
     Route::post('contacts/mark-all-read', [AdminContactController::class, 'markAllAsRead'])
         ->name('contacts.mark-all-read');
+    Route::post('contacts/bulk-action', [AdminContactController::class, 'bulkAction'])
+        ->name('contacts.bulkAction');
 
     // Projects Management
     Route::resource('projects', AdminProjectController::class)->except(['show']);
+    Route::post('projects/bulk-action', [AdminProjectController::class, 'bulkAction'])
+        ->name('projects.bulkAction');
 
     // Partners Management
     Route::resource('partners', AdminPartnerController::class)->except(['show']);
     Route::patch('partners/{partner}/toggle-active', [AdminPartnerController::class, 'toggleActive'])
         ->name('partners.toggleActive');
+    Route::post('partners/bulk-action', [AdminPartnerController::class, 'bulkAction'])
+        ->name('partners.bulkAction');
 
     // Gallery Management
     Route::resource('galleries', AdminGalleryController::class)->except(['show']);
     Route::patch('galleries/{gallery}/toggle-publish', [AdminGalleryController::class, 'togglePublish'])
         ->name('galleries.togglePublish');
+
+    // Users Management
+    Route::resource('users', AdminUserController::class)->except(['show']);
+    Route::patch('users/{user}/toggle-verification', [AdminUserController::class, 'toggleVerification'])
+        ->name('users.toggleVerification');
 });
 
 require __DIR__.'/auth.php';

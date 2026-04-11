@@ -166,4 +166,50 @@ class ArticleController extends Controller
 
         return redirect()->back()->with('success', $message);
     }
+
+    /**
+     * Handle bulk actions on articles.
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:publish,unpublish,delete',
+            'article_ids' => 'required|array',
+            'article_ids.*' => 'exists:articles,id',
+        ]);
+
+        $articleIds = $validated['article_ids'];
+        $action = $validated['action'];
+
+        switch ($action) {
+            case 'publish':
+                Article::whereIn('id', $articleIds)->update([
+                    'status' => 'published',
+                    'published_at' => now(),
+                ]);
+                $message = count($articleIds) . ' article(s) published.';
+                break;
+
+            case 'unpublish':
+                Article::whereIn('id', $articleIds)->update(['status' => 'draft']);
+                $message = count($articleIds) . ' article(s) unpublished.';
+                break;
+
+            case 'delete':
+                $articles = Article::whereIn('id', $articleIds)->get();
+                foreach ($articles as $article) {
+                    if ($article->featured_image) {
+                        Storage::disk('public')->delete($article->featured_image);
+                    }
+                    $article->delete();
+                }
+                $message = count($articleIds) . ' article(s) deleted.';
+                break;
+
+            default:
+                return redirect()->back()->with('error', 'Invalid action.');
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
 }

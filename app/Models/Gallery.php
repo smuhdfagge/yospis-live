@@ -12,7 +12,6 @@ class Gallery extends Model
     protected $fillable = [
         'title',
         'description',
-        'image',
         'category',
         'is_published',
         'sort_order',
@@ -47,6 +46,23 @@ class Gallery extends Model
     }
 
     /**
+     * Get the images for this gallery
+     */
+    public function images()
+    {
+        return $this->hasMany(GalleryImage::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Get the cover image URL (first image)
+     */
+    public function getCoverImageUrlAttribute()
+    {
+        $first = $this->images->first();
+        return $first ? $first->image_url : asset('images/placeholder.png');
+    }
+
+    /**
      * Get unique categories
      */
     public static function getCategories()
@@ -54,14 +70,4 @@ class Gallery extends Model
         return self::distinct()->pluck('category')->filter()->values();
     }
 
-    /**
-     * Get the image URL
-     */
-    public function getImageUrlAttribute()
-    {
-        if (str_starts_with($this->image, 'http')) {
-            return $this->image;
-        }
-        return asset('storage/' . $this->image);
-    }
 }
