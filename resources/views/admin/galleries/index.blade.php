@@ -8,14 +8,14 @@
     <!-- Header Actions -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h2 class="text-xl font-semibold text-gray-900">All Gallery Images</h2>
-            <p class="text-sm text-gray-600">Manage your photo gallery</p>
+            <h2 class="text-xl font-semibold text-gray-900">All Galleries</h2>
+            <p class="text-sm text-gray-600">Manage your photo galleries</p>
         </div>
         <a href="{{ route('admin.galleries.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-700 transition">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Add Image
+            Add Gallery
         </a>
     </div>
 
@@ -61,9 +61,16 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden group">
                     <!-- Image -->
                     <div class="relative aspect-square overflow-hidden">
-                        <img src="{{ $gallery->image_url }}" alt="{{ $gallery->title }}" 
+                        <img src="{{ $gallery->cover_image_url }}" alt="{{ $gallery->title }}" 
                              class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
                         
+                        <!-- Image Count Badge -->
+                        <div class="absolute top-2 right-2">
+                            <span class="px-2 py-1 text-xs font-medium bg-black/60 text-white rounded-full">
+                                {{ $gallery->images_count }} {{ Str::plural('image', $gallery->images_count) }}
+                            </span>
+                        </div>
+
                         <!-- Status Badge -->
                         <div class="absolute top-2 left-2">
                             @if($gallery->is_published)
@@ -98,7 +105,7 @@
                                 </button>
                             </form>
                             <form action="{{ route('admin.galleries.destroy', $gallery) }}" method="POST" class="inline" 
-                                  onsubmit="return confirm('Are you sure you want to delete this image?')">
+                                  onsubmit="return confirm('Are you sure you want to delete this gallery and all its images?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="p-2 bg-white rounded-full hover:bg-gray-100 transition">
@@ -131,13 +138,13 @@
             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No gallery images yet</h3>
-            <p class="text-gray-600 mb-4">Start by adding your first image to the gallery.</p>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No galleries yet</h3>
+            <p class="text-gray-600 mb-4">Start by creating your first gallery.</p>
             <a href="{{ route('admin.galleries.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-700 transition">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                Add First Image
+                Add First Gallery
             </a>
         </div>
     @endif

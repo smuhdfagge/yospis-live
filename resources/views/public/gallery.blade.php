@@ -16,7 +16,7 @@
     </section>
 
     <!-- Gallery Section -->
-    <section class="py-16 bg-gray-50" x-data="gallery()">
+    <section class="py-16 bg-gray-50" x-data="galleryViewer()">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Category Filter -->
             @if($categories->count() > 0)
@@ -38,15 +38,21 @@
             @if($galleries->count() > 0)
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     @foreach($galleries as $index => $gallery)
-                        <div class="group cursor-pointer" @click="openModal({{ $index }})">
+                        <div class="group cursor-pointer" @click="openGallery({{ $index }})">
                             <div class="relative aspect-square overflow-hidden rounded-xl shadow-lg">
-                                <img src="{{ $gallery->image_url }}" alt="{{ $gallery->title }}" 
+                                <img src="{{ $gallery->cover_image_url }}" alt="{{ $gallery->title }}" 
                                      class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <div class="absolute bottom-0 left-0 right-0 p-4">
                                         <h3 class="text-white font-semibold text-lg">{{ $gallery->title }}</h3>
                                         <p class="text-gray-200 text-sm">{{ ucfirst($gallery->category) }}</p>
                                     </div>
+                                </div>
+                                <!-- Image Count Badge -->
+                                <div class="absolute top-3 right-3">
+                                    <span class="px-2.5 py-1 text-xs font-semibold bg-black/60 text-white rounded-full backdrop-blur-sm">
+                                        {{ $gallery->images->count() }} {{ Str::plural('photo', $gallery->images->count()) }}
+                                    </span>
                                 </div>
                                 <!-- Zoom Icon -->
                                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -70,7 +76,7 @@
                     <svg class="w-20 h-20 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                     </svg>
-                    <h3 class="text-xl font-semibold text-gray-700 mb-2">No images yet</h3>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">No galleries yet</h3>
                     <p class="text-gray-500">Check back soon for photos from our events and activities.</p>
                 </div>
             @endif
@@ -99,14 +105,14 @@
             </button>
 
             <!-- Previous Button -->
-            <button @click="prevImage()" class="absolute left-4 text-white hover:text-gray-300 transition z-10 p-2">
+            <button @click="prevImage()" x-show="currentImages.length > 1" class="absolute left-4 text-white hover:text-gray-300 transition z-10 p-2">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
             </button>
 
             <!-- Next Button -->
-            <button @click="nextImage()" class="absolute right-4 text-white hover:text-gray-300 transition z-10 p-2">
+            <button @click="nextImage()" x-show="currentImages.length > 1" class="absolute right-4 text-white hover:text-gray-300 transition z-10 p-2">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                 </svg>
@@ -114,20 +120,20 @@
 
             <!-- Image Container -->
             <div class="max-w-5xl max-h-[85vh] relative">
-                <img :src="currentImage?.url" :alt="currentImage?.title" 
+                <img :src="currentImageUrl" :alt="currentGalleryTitle" 
                      class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl">
                 
                 <!-- Image Info -->
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 rounded-b-lg">
-                    <h3 class="text-white text-xl font-semibold" x-text="currentImage?.title"></h3>
-                    <p class="text-gray-300 text-sm mt-1" x-text="currentImage?.category"></p>
-                    <p class="text-gray-400 text-sm mt-2" x-text="currentImage?.description" x-show="currentImage?.description"></p>
+                    <h3 class="text-white text-xl font-semibold" x-text="currentGalleryTitle"></h3>
+                    <p class="text-gray-300 text-sm mt-1" x-text="currentGalleryCategory"></p>
+                    <p class="text-gray-400 text-sm mt-2" x-text="currentGalleryDescription" x-show="currentGalleryDescription"></p>
                 </div>
             </div>
 
             <!-- Image Counter -->
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
-                <span x-text="currentIndex + 1"></span> / <span x-text="images.length"></span>
+            <div x-show="currentImages.length > 1" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm">
+                <span x-text="imageIndex + 1"></span> / <span x-text="currentImages.length"></span>
             </div>
         </div>
     </section>
@@ -149,41 +155,55 @@
     </section>
 
     @php
-        $galleryImages = $galleries->map(fn($g) => [
-            'url' => $g->image_url,
+        $galleriesData = $galleries->map(fn($g) => [
             'title' => $g->title,
             'category' => ucfirst($g->category),
-            'description' => $g->description
+            'description' => $g->description,
+            'images' => $g->images->map(fn($img) => $img->image_url)->values(),
         ])->values();
     @endphp
     <script>
-        function gallery() {
+        function galleryViewer() {
             return {
                 isOpen: false,
-                currentIndex: 0,
-                images: {!! json_encode($galleryImages) !!},
-                
-                get currentImage() {
-                    return this.images[this.currentIndex] || null;
+                galleryIndex: 0,
+                imageIndex: 0,
+                galleries: {!! json_encode($galleriesData) !!},
+
+                get currentImages() {
+                    return this.galleries[this.galleryIndex]?.images || [];
                 },
-                
-                openModal(index) {
-                    this.currentIndex = index;
+                get currentImageUrl() {
+                    return this.currentImages[this.imageIndex] || '';
+                },
+                get currentGalleryTitle() {
+                    return this.galleries[this.galleryIndex]?.title || '';
+                },
+                get currentGalleryCategory() {
+                    return this.galleries[this.galleryIndex]?.category || '';
+                },
+                get currentGalleryDescription() {
+                    return this.galleries[this.galleryIndex]?.description || '';
+                },
+
+                openGallery(index) {
+                    this.galleryIndex = index;
+                    this.imageIndex = 0;
                     this.isOpen = true;
                     document.body.style.overflow = 'hidden';
                 },
-                
+
                 closeModal() {
                     this.isOpen = false;
                     document.body.style.overflow = '';
                 },
-                
+
                 nextImage() {
-                    this.currentIndex = (this.currentIndex + 1) % this.images.length;
+                    this.imageIndex = (this.imageIndex + 1) % this.currentImages.length;
                 },
-                
+
                 prevImage() {
-                    this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
+                    this.imageIndex = (this.imageIndex - 1 + this.currentImages.length) % this.currentImages.length;
                 }
             }
         }

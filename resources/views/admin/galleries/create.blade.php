@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Gallery Image')
-@section('header', 'Add Gallery Image')
+@section('title', 'Add Gallery Images')
+@section('header', 'Add Gallery Images')
 
 @section('content')
 <div class="max-w-3xl">
@@ -12,44 +12,50 @@
             <div class="p-6 space-y-6">
                 <!-- Image Upload -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Image *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Images *</label>
                     <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition" 
-                         x-data="{ fileName: '', preview: null }"
+                         x-data="{ files: [], previews: [] }"
                          @dragover.prevent="$el.classList.add('border-blue-400')"
                          @dragleave.prevent="$el.classList.remove('border-blue-400')"
                          @drop.prevent="
                             $el.classList.remove('border-blue-400');
-                            const file = $event.dataTransfer.files[0];
-                            if (file && file.type.startsWith('image/')) {
-                                $refs.fileInput.files = $event.dataTransfer.files;
-                                fileName = file.name;
-                                preview = URL.createObjectURL(file);
-                            }
+                            const dt = new DataTransfer();
+                            Array.from($event.dataTransfer.files).forEach(f => { if (f.type.startsWith('image/')) dt.items.add(f); });
+                            $refs.fileInput.files = dt.files;
+                            files = Array.from(dt.files).map(f => f.name);
+                            previews = Array.from(dt.files).map(f => URL.createObjectURL(f));
                          ">
                         <div class="space-y-2 text-center">
-                            <template x-if="preview">
-                                <img :src="preview" class="mx-auto h-32 w-auto rounded-lg object-cover">
+                            <template x-if="previews.length > 0">
+                                <div class="flex flex-wrap gap-2 justify-center">
+                                    <template x-for="(src, i) in previews" :key="i">
+                                        <img :src="src" class="h-24 w-24 rounded-lg object-cover">
+                                    </template>
+                                </div>
                             </template>
-                            <template x-if="!preview">
+                            <template x-if="previews.length === 0">
                                 <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                                     <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
                             </template>
                             <div class="flex text-sm text-gray-600 justify-center">
                                 <label class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                                    <span x-text="fileName || 'Upload a file'"></span>
-                                    <input type="file" name="image" x-ref="fileInput" class="sr-only" accept="image/*" required
+                                    <span x-text="files.length ? files.length + ' file(s) selected' : 'Upload files'"></span>
+                                    <input type="file" name="images[]" x-ref="fileInput" class="sr-only" accept="image/*" multiple required
                                            @change="
-                                               fileName = $event.target.files[0]?.name || '';
-                                               preview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null;
+                                               files = Array.from($event.target.files).map(f => f.name);
+                                               previews = Array.from($event.target.files).map(f => URL.createObjectURL(f));
                                            ">
                                 </label>
-                                <p class="pl-1" x-show="!fileName">or drag and drop</p>
+                                <p class="pl-1" x-show="!files.length">or drag and drop</p>
                             </div>
-                            <p class="text-xs text-gray-500">PNG, JPG, GIF, WEBP up to 5MB</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, GIF, WEBP up to 5MB each. You can select multiple images.</p>
                         </div>
                     </div>
-                    @error('image')
+                    @error('images')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                    @error('images.*')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -71,6 +77,7 @@
                     <div x-data="{ showCustom: false, categories: {{ json_encode($categories) }} }">
                         <select name="category" id="category" 
                                 x-show="!showCustom"
+                                :disabled="showCustom"
                                 @change="if ($event.target.value === '__custom__') { showCustom = true; $event.target.value = ''; }"
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Select category</option>
@@ -86,7 +93,7 @@
                             <option value="__custom__">+ Add new category</option>
                         </select>
                         <div x-show="showCustom" class="flex gap-2">
-                            <input type="text" name="category" placeholder="Enter new category"
+                            <input type="text" name="category" :disabled="!showCustom" placeholder="Enter new category"
                                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <button type="button" @click="showCustom = false" class="px-4 py-2 text-gray-600 hover:text-gray-800">
                                 Cancel
@@ -134,7 +141,7 @@
                     Cancel
                 </a>
                 <button type="submit" class="px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-700 transition">
-                    Add Image
+                    Add Images
                 </button>
             </div>
         </form>

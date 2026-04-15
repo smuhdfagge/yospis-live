@@ -21,11 +21,53 @@
             </div>
         </div>
 
+        <!-- Bulk Actions Bar (Hidden by default) -->
+        <div id="bulk-actions-bar" class="hidden p-4 bg-gray-50 border-b border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-center space-x-2">
+                    <span id="selected-count" class="text-sm font-medium text-gray-700">0 selected</span>
+                    <button type="button" id="clear-selection" class="text-sm text-blue-600 hover:text-blue-800">
+                        Clear selection
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button type="button" data-action="activate" class="bulk-action-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Activate
+                    </button>
+                    <button type="button" data-action="deactivate" class="bulk-action-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                        </svg>
+                        Deactivate
+                    </button>
+                    <button type="button" data-action="delete" class="bulk-action-btn inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden form for bulk actions -->
+        <form id="bulk-action-form" action="{{ route('admin.partners.bulkAction') }}" method="POST" class="hidden">
+            @csrf
+            <input type="hidden" name="action" id="bulk-action-type">
+            <div id="bulk-partner-ids"></div>
+        </form>
+
         <!-- Table -->
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-6 py-3 text-left">
+                            <input type="checkbox" id="select-all" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Partner</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -36,6 +78,9 @@
                 <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($partners as $partner)
                         <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <input type="checkbox" class="partner-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" value="{{ $partner->id }}">
+                            </td>
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
                                     @if($partner->logo)
@@ -112,7 +157,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-12 text-center">
+                            <td colspan="6" class="px-6 py-12 text-center">
                                 <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
@@ -134,4 +179,103 @@
             </div>
         @endif
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllCheckbox = document.getElementById('select-all');
+            const partnerCheckboxes = document.querySelectorAll('.partner-checkbox');
+            const bulkActionsBar = document.getElementById('bulk-actions-bar');
+            const selectedCountEl = document.getElementById('selected-count');
+            const clearSelectionBtn = document.getElementById('clear-selection');
+            const bulkActionBtns = document.querySelectorAll('.bulk-action-btn');
+            const bulkActionForm = document.getElementById('bulk-action-form');
+            const bulkActionType = document.getElementById('bulk-action-type');
+            const bulkPartnerIds = document.getElementById('bulk-partner-ids');
+
+            function updateBulkActionsUI() {
+                const checkedBoxes = document.querySelectorAll('.partner-checkbox:checked');
+                const count = checkedBoxes.length;
+
+                if (count > 0) {
+                    bulkActionsBar.classList.remove('hidden');
+                    selectedCountEl.textContent = count + ' selected';
+                } else {
+                    bulkActionsBar.classList.add('hidden');
+                }
+
+                if (count === 0) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (count === partnerCheckboxes.length) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                }
+            }
+
+            selectAllCheckbox.addEventListener('change', function() {
+                partnerCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateBulkActionsUI();
+            });
+
+            partnerCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateBulkActionsUI);
+            });
+
+            clearSelectionBtn.addEventListener('click', function() {
+                partnerCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                updateBulkActionsUI();
+            });
+
+            bulkActionBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const action = this.dataset.action;
+                    const checkedBoxes = document.querySelectorAll('.partner-checkbox:checked');
+
+                    if (checkedBoxes.length === 0) {
+                        alert('Please select at least one partner.');
+                        return;
+                    }
+
+                    let confirmMessage = '';
+                    switch(action) {
+                        case 'activate':
+                            confirmMessage = 'Activate ' + checkedBoxes.length + ' partner(s)?';
+                            break;
+                        case 'deactivate':
+                            confirmMessage = 'Deactivate ' + checkedBoxes.length + ' partner(s)?';
+                            break;
+                        case 'delete':
+                            confirmMessage = 'Are you sure you want to delete ' + checkedBoxes.length + ' partner(s)? This action cannot be undone.';
+                            break;
+                    }
+
+                    if (confirm(confirmMessage)) {
+                        bulkActionType.value = action;
+                        bulkPartnerIds.innerHTML = '';
+
+                        checkedBoxes.forEach(checkbox => {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'partner_ids[]';
+                            input.value = checkbox.value;
+                            bulkPartnerIds.appendChild(input);
+                        });
+
+                        bulkActionForm.submit();
+                    }
+                });
+            });
+        });
+    </script>
+    @endpush
 @endsection

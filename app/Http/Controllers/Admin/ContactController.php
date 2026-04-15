@@ -112,4 +112,41 @@ class ContactController extends Controller
 
         return redirect()->back()->with('success', 'All messages marked as read.');
     }
+
+    /**
+     * Handle bulk actions on contacts.
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:mark_read,mark_unread,delete',
+            'contact_ids' => 'required|array',
+            'contact_ids.*' => 'exists:contacts,id',
+        ]);
+
+        $contactIds = $validated['contact_ids'];
+        $action = $validated['action'];
+
+        switch ($action) {
+            case 'mark_read':
+                Contact::whereIn('id', $contactIds)->update(['status' => 'read']);
+                $message = count($contactIds) . ' message(s) marked as read.';
+                break;
+
+            case 'mark_unread':
+                Contact::whereIn('id', $contactIds)->update(['status' => 'unread']);
+                $message = count($contactIds) . ' message(s) marked as unread.';
+                break;
+
+            case 'delete':
+                Contact::whereIn('id', $contactIds)->delete();
+                $message = count($contactIds) . ' message(s) deleted.';
+                break;
+
+            default:
+                return redirect()->back()->with('error', 'Invalid action.');
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
 }

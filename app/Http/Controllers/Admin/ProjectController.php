@@ -148,4 +148,62 @@ class ProjectController extends Controller
         return redirect()->route('admin.projects.index')
             ->with('success', 'Project deleted successfully.');
     }
+
+    /**
+     * Handle bulk actions on projects.
+     */
+    public function bulkAction(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'action' => 'required|in:set_ongoing,set_completed,set_upcoming,feature,unfeature,delete',
+            'project_ids' => 'required|array',
+            'project_ids.*' => 'exists:projects,id',
+        ]);
+
+        $projectIds = $validated['project_ids'];
+        $action = $validated['action'];
+
+        switch ($action) {
+            case 'set_ongoing':
+                Project::whereIn('id', $projectIds)->update(['status' => 'ongoing']);
+                $message = count($projectIds) . ' project(s) marked as ongoing.';
+                break;
+
+            case 'set_completed':
+                Project::whereIn('id', $projectIds)->update(['status' => 'completed']);
+                $message = count($projectIds) . ' project(s) marked as completed.';
+                break;
+
+            case 'set_upcoming':
+                Project::whereIn('id', $projectIds)->update(['status' => 'upcoming']);
+                $message = count($projectIds) . ' project(s) marked as upcoming.';
+                break;
+
+            case 'feature':
+                Project::whereIn('id', $projectIds)->update(['is_featured' => true]);
+                $message = count($projectIds) . ' project(s) marked as featured.';
+                break;
+
+            case 'unfeature':
+                Project::whereIn('id', $projectIds)->update(['is_featured' => false]);
+                $message = count($projectIds) . ' project(s) removed from featured.';
+                break;
+
+            case 'delete':
+                $projects = Project::whereIn('id', $projectIds)->get();
+                foreach ($projects as $project) {
+                    if ($project->featured_image) {
+                        Storage::disk('public')->delete($project->featured_image);
+                    }
+                    $project->delete();
+                }
+                $message = count($projectIds) . ' project(s) deleted.';
+                break;
+
+            default:
+                return redirect()->back()->with('error', 'Invalid action.');
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
 }
